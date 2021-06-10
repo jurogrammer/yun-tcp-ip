@@ -6,7 +6,7 @@
 int main(void)
 {
     int fd1, fd2, fd3;
-    
+
     fd1 = socket(PF_INET, SOCK_STREAM, 0);
     fd2 = open("data.txt", O_CREAT|O_WRONLY|O_TRUNC);
     fd3 = socket(PF_INET, SOCK_STREAM, 0);
@@ -21,3 +21,4 @@ int main(void)
 
     return 0;
 }
+4

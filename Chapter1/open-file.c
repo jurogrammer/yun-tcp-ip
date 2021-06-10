@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
-void error_handling(char *smessage);
+void error_handling(char *message);
 
 int main(void)
 {

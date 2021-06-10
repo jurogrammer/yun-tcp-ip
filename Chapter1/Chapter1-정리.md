@@ -209,22 +209,23 @@ low-level의 의미는 단순하게, "표준에 상관없이 운영체제 자체
 2. 파일의 오픈 모드 정보(파일 특성 정보) 비트 OR 연산을 통해 하나 이상의 정보를 전달할 수 있습니다.
 
 ```c
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
+int open(const char *path, int flag);
+// 성공: file descripter 반환, 실패 -1 반환
 ```
 
 
 
 오픈 모드는 다음 것 들이 있습니다.
 
-| 오픈모드 | 의미 |
-| -------- | ---- |
-|          |      |
-
 
 
 한편으로, OR 비트 연산으로 하나 이상의 정보를 전달할 수 있는 이유는... 각 옵션이 비트 벡터로 표현되기 때문입니다.
 
-0x00000200   0010/0000/0000  O_CREAT  16진수 1자리가 16자리의 수를 나타낼 수 있음 -> 4비트로 표현 가능
+0x00000200   0010/0000/0000  O_CREAT  16진수. 1자리가 16자리의 수를 나타낼 수 있음 -> 4비트로 표현 가능
 
 0x0001            0000/0000/0001 O_WRONLY
 
@@ -236,7 +237,7 @@ low-level의 의미는 단순하게, "표준에 상관없이 운영체제 자체
 
 
 
-#### 참고자료
+###### 참고자료
 
 왜 16진수 표시엔 0x가 붙을까?
 
@@ -253,7 +254,11 @@ https://www.quora.com/Why-do-hexadecimal-numbers-by-convention-start-with-0x-in-
 > file descriptor는 os에서 file descriptor table이란 곳에서 저장됩니다. 한편, 프로세스에서는 단순히 int type의 local variable이므로 stack memory에 저장되죠.
 
 ```c
+#include <unistd.h>
 
+int close(int fd);
+
+// 성공: 0 반환, 실패 -1 반환
 ```
 
 위 함수를 호출 하면서 인자로 파일 디스크립터를 인자로 전달하면 파일을 종료하게 해줍니다. 그런데! 소켓과 파일은 동일하게 취급한다고 했잖아요? 소켓을 종료할 때도 위 함수 호출을 사용하죠.
@@ -267,6 +272,9 @@ https://www.quora.com/Why-do-hexadecimal-numbers-by-convention-start-with-0x-in-
 > 파일에 데이터를 출력, 전송한다. 말이 와닿지 않는다. 공부해보기!
 
 ```c
+#include <unistd.h>
+
+ssize_t write(int fd, const void * buf, size_t nbytes);
 ```
 
 
@@ -294,6 +302,33 @@ t는 type의 약자로 보이네요.
 #### 파일 열기
 
 ```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+void error_handling(char *smessage);
+
+int main(void)
+{
+    int fd;
+    char buf[] = "Let's go!\n";
+    fd = open("data.txt",O_CREAT|O_WRONLY|O_TRUNC);
+    if(fd == -1)
+        error_handling("open() error!");
+    printf("file descriptor: %d \n", fd);
+
+    if(write(fd, buf, sizeof(buf)) == -1)
+        error_handling("write() error!");
+    close(fd);
+    
+    return 0;
+}
+
+void error_handling(char *message) {
+    fputs(message, stderr);
+    fputc('\n', stderr);
+    exit(1);
+}
 ```
 
 
@@ -301,7 +336,38 @@ t는 type의 약자로 보이네요.
 #### 파일 읽기
 
 ```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <unistd.h>
+#define BUFF_SIZE 100
+void error_handling(char *message);
 
+int main(void)
+{
+    int fd;
+    char buf[BUFF_SIZE];
+
+    fd = open("data.txt", O_RDONLY);
+
+    if(fd == -1)
+        error_handling("open() error!");
+    printf("file descriptor: %d \n", fd);
+
+    if(read(fd, buf, sizeof(buf)) == -1)
+        error_handling("read() error!");
+    printf("file data: %s", buf);
+    close(fd);
+
+    return 0;
+}
+
+void error_handling(char *message)
+{
+    fputs(message, stderr);
+    fputc('\n', stderr);
+    exit(1);
+}
 ```
 
 
@@ -313,5 +379,28 @@ t는 type의 약자로 보이네요.
 파일과 소켓을 생성해보고 반환되는 파일 디스크리벝의 값을 반환해보도록 하겠습니다.
 
 ```c
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/socket.h>
+
+int main(void)
+{
+    int fd1, fd2, fd3;
+    
+    fd1 = socket(PF_INET, SOCK_STREAM, 0);
+    fd2 = open("data.txt", O_CREAT|O_WRONLY|O_TRUNC);
+    fd3 = socket(PF_INET, SOCK_STREAM, 0);
+
+    printf("file descriptor 1: %d\n", fd1);
+    printf("file descriptor 2: %d\n", fd2);
+    printf("file descriptor 3: %d\n", fd3);
+
+    close(fd1);
+    close(fd2);
+    close(fd3);
+
+    return 0;
+}
 ```
 
